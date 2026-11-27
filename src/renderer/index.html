@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>Orkestra</title>
+  <link rel="stylesheet" href="../../node_modules/@xterm/xterm/css/xterm.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="titlebar-space"><button class="side-toggle" aria-label="Kenar çubuğu"><svg viewBox="0 0 18 14" width="18" height="14" aria-hidden="true"><rect x="0.75" y="0.75" width="16.5" height="12.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="6.5" y1="1" x2="6.5" y2="13" stroke="currentColor" stroke-width="1.5"/><rect class="st-fill" x="1.5" y="1.5" width="4.25" height="11" rx="1.5" fill="currentColor"/></svg></button></div>
+      <div class="side-head">
+        <span class="brand"><img class="brand-logo" src="../assets/logo-mark.png" alt="" draggable="false">ORKESTRA</span>
+        <span id="side-count" class="muted"></span>
+        <button id="btn-quick" class="quick-new" title="Masaüstünde yeni Claude oturumu (⌘⇧N)" aria-label="Masaüstünde yeni oturum">＋</button>
+      </div>
+      <div class="side-search">
+        <input id="side-q" class="side-q" placeholder="Ortam, oturum, proje ara…" autocomplete="off" spellcheck="false">
+        <kbd class="side-q-kbd">⌘K</kbd>
+        <div id="side-results" hidden></div>
+      </div>
+      <div id="spaces"></div>
+      <div id="list"></div>
+      <button id="btn-new" class="side-new">＋ Yeni oturum <kbd>⌘N</kbd></button>
+      <div class="side-hint muted">⌘J sıradaki · ⌘⇧B toplu mesaj · ⌘-tık seç</div>
+    </aside>
+    <main id="stage">
+      <div class="titlebar-drag"><button class="side-toggle in-stage" aria-label="Kenar çubuğu"><svg viewBox="0 0 18 14" width="18" height="14" aria-hidden="true"><rect x="0.75" y="0.75" width="16.5" height="12.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="6.5" y1="1" x2="6.5" y2="13" stroke="currentColor" stroke-width="1.5"/><rect class="st-fill" x="1.5" y="1.5" width="4.25" height="11" rx="1.5" fill="currentColor"/></svg></button></div>
+      <div id="grid"></div>
+      <div id="empty" hidden>
+        <div class="empty-box">
+          <div class="empty-title">Ekranda oturum yok</div>
+          <div class="muted">Soldan bir oturum seç ya da <kbd>⌘N</kbd> ile yenisini aç.</div>
+          <button id="btn-new-2" class="btn primary">＋ Yeni oturum</button>
+        </div>
+      </div>
+      <div id="drag-cover" hidden></div>
+    </main>
+    <footer id="bar"></footer>
+  </div>
+
+  <div id="park" aria-hidden="true"></div>
+
+  <!-- New session -->
+  <div id="modal-new" class="modal" hidden>
+    <div class="modal-card wide">
+      <div class="np">
+        <div class="np-left">
+          <input id="np-search" class="input" placeholder="Klasör ara…" autocomplete="off" spellcheck="false">
+          <div id="np-folders"></div>
+          <div class="np-left-actions">
+            <button id="np-newcat" class="btn ghost">＋ Kategori</button>
+            <button id="np-pick" class="btn ghost">＋ Klasör ekle…</button>
+          </div>
+        </div>
+        <div class="np-right" id="np-detail"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Broadcast -->
+  <div id="modal-bc" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-title">Toplu mesaj</div>
+      <div id="bc-targets" class="chips"></div>
+      <textarea id="bc-text" class="input" rows="4" placeholder="Seçili oturumlara gönderilecek mesaj…  (Enter gönder, ⇧Enter yeni satır)"></textarea>
+      <div class="modal-actions">
+        <span class="muted">İzin bekleyen oturumlar atlanır.</span>
+        <button id="bc-cancel" class="btn ghost">Vazgeç</button>
+        <button id="bc-send" class="btn primary">Gönder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save / rename a workspace -->
+  <div id="modal-space" class="modal" hidden>
+    <div class="modal-card">
+      <div id="sp-title" class="modal-title"></div>
+      <div id="sp-targets" class="chips"></div>
+      <input id="sp-name" class="input" placeholder="Ad, örn. Backend" autocomplete="off" spellcheck="false">
+      <div class="modal-actions">
+        <span id="sp-note" class="muted"></span>
+        <button id="sp-cancel" class="btn ghost">Vazgeç</button>
+        <button id="sp-save" class="btn primary">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search every conversation -->
+  <div id="modal-search" class="modal" hidden>
+    <div class="modal-card search-card">
+      <input id="sr-q" class="input" placeholder="Bütün konuşmalarda ara… (en az 2 harf)" autocomplete="off" spellcheck="false">
+      <div id="sr-status" class="muted"></div>
+      <div id="sr-results"></div>
+    </div>
+  </div>
+
+  <div id="toast" hidden></div>
+
+  <script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="../../node_modules/@xterm/addon-webgl/lib/addon-webgl.js"></script>
+  <script src="../../node_modules/@xterm/addon-unicode11/lib/addon-unicode11.js"></script>
+  <script src="../../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>
+  <script src="dropPaths.js"></script>
+  <script src="layout.js"></script>
+  <script src="app.js"></script>
+  <script src="extras.js"></script>
+  <script src="flow.js"></script>
+  <script src="finder.js"></script>
+</body>
+</html>
